@@ -1,43 +1,36 @@
-import csv
-import math
-from collections import Counter
+from math import log2
 
-def calculate_entropy(probabilities):
-    return -sum(p * math.log2(p) for p in probabilities if p > 0)
+def entropy(probabilities):
+    return -sum(prob * log2(prob) for prob in probabilities if prob > 0)
 
-def main():
-    data = []
-    with open('data.csv', newline='') as csvfile:
-        reader = csv.reader(csvfile)
-        next(reader)
-        for row in reader:
-            data.append([int(x) for x in row[1:]])
-
-    total_counts = [sum(column) for column in zip(*data)]
-    total_sum = sum(total_counts)
-    probabilities = [count / total_sum for count in total_counts]
-
-    sum_probabilities = probabilities[:6]
+def main(input_matrix):
+    amount_of_purchases = sum(sum(row) for row in input_matrix)
     
-    product_probabilities = probabilities[6:]
-
-    joint_probabilities = Counter()
-    for i in range(len(sum_probabilities)):
-        for j in range(len(product_probabilities)):
-            joint_probabilities[(i, j)] += sum_probabilities[i] * product_probabilities[j]
-    joint_probabilities = [joint_probabilities[key] for key in sorted(joint_probabilities)]
-
-    H_AB = calculate_entropy(joint_probabilities)
+    compatible_event_prob_matrix = [[value / amount_of_purchases for value in row] for row in input_matrix]
     
-    H_A = calculate_entropy(sum_probabilities)
+    p_y_vector = [sum(row) for row in compatible_event_prob_matrix]
+    p_x_vector = [sum(col) for col in zip(*compatible_event_prob_matrix)]
     
-    H_B = calculate_entropy(product_probabilities)
+    H_XY = entropy([prob for row in compatible_event_prob_matrix for prob in row])
+    H_Y = entropy(p_y_vector)
+    H_X = entropy(p_x_vector)
     
-    Ha_B = H_AB - H_A
+    overall_conditional_H = 0
+    for row_index, row in enumerate(compatible_event_prob_matrix):
+        conditional_prob_row = [prob / p_y_vector[row_index] for prob in row if p_y_vector[row_index] > 0]
+        conditional_H = entropy(conditional_prob_row)
+        overall_conditional_H += conditional_H * p_y_vector[row_index]
+    
+    information_quantity = H_X - overall_conditional_H
+    H_XY_through_sum = H_Y + overall_conditional_H
+    
+    print(f"I(X,Y) = Количество информации: {round(information_quantity, 2)}")
+    print(f"H(XY) = Энтропия совместного события: {round(H_XY_through_sum, 2)}")
 
-    I_AB = H_A + H_B - H_AB
-    
-    return [round(H_AB, 2), round(H_A, 2), round(H_B, 2), round(Ha_B, 2), round(I_AB, 2)]
+test_matrix = [[20, 15, 10, 5],
+               [30, 20, 15, 10],
+               [25, 25, 20, 15],
+               [20, 20, 25, 20],
+               [15, 15, 30, 25]]
 
-if __name__ == "__main__":
-    print(main())
+main(test_matrix)

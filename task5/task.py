@@ -1,35 +1,112 @@
-import json
+from collections import deque
 
-def find_conflict_core(rank_a, rank_b):
-    def flatten_ranking(ranking):
-        flat_ranking = {}
-        for idx, cluster in enumerate(ranking):
-            if isinstance(cluster, list):
-                for item in cluster:
-                    flat_ranking[item] = idx
+def build_matrix(a):
+    n = len(a)
+    a = {a[i] - 1: n - i for i in range(len(a))}
+    print({a[i]: n - i for i in range(len(a))})
+    A = [[0] * n for _ in range(n)]
+
+    for i in range(n):
+        for j in range(n):
+            if a[i] >= a[j]:
+                A[i][j] = 1
             else:
-                flat_ranking[cluster] = idx
-        return flat_ranking
+                A[i][j] = 0
 
-    flat_a = flatten_ranking(rank_a)
-    flat_b = flatten_ranking(rank_b)
+    return A
 
-    conflict_core = []
-    for item in flat_a:
-        if item in flat_b and flat_a[item] != flat_b[item]:
-            conflict_core.append(item)
+def transpose(matrix):
+    return [[matrix[j][i] for j in range(len(matrix))] for i in range(len(matrix[0]))]
 
-    return conflict_core
+def bitwise_and(matrix1, matrix2):
+    return [[matrix1[i][j] & matrix2[i][j] for j in range(len(matrix1[0]))] for i in range(len(matrix1))]
 
-def main(json_a: str, json_b: str) -> str:
-    rank_a = json.loads(json_a)
-    rank_b = json.loads(json_b)
+def matrix_add(matrix1, matrix2):
+    return [[matrix1[i][j] + matrix2[i][j] for j in range(len(matrix1[0]))] for i in range(len(matrix1))]
 
-    conflict_core = find_conflict_core(rank_a, rank_b)
+def main():
+    a = [3, 1, 2]
+    A = build_matrix(a)
+    b = [1, 3, 2]
+    B = build_matrix(b)
 
-    return json.dumps(conflict_core)
+    A_T = transpose(A)
+    B_T = transpose(B)
 
-if __name__ == "__main__":
-    json_a = '[1,[2,3],4,[5,6,7],8,9,10]'
-    json_b = '[[1,2],[3,4,5],6,7,9,[8,10]]'
-    print(main(json_a, json_b))
+    Y_AB = bitwise_and(A, B)
+
+    Y_AB_T = bitwise_and(A_T, B_T)
+
+    K = matrix_add(Y_AB, Y_AB_T)
+
+    print("Матрица A:")
+    for row in A:
+        print(row)
+
+    print("\nМатрица B:")
+    for row in B:
+        print(row)
+
+    print("\nМатрица Y_AB (A & B):")
+    for row in Y_AB:
+        print(row)
+
+    print("\nТранспонированная матрица A_T:")
+    for row in A_T:
+        print(row)
+
+    print("\nТранспонированная матрица B_T:")
+    for row in B_T:
+        print(row)
+
+    print("\nМатрица Y_AB_T (A_T & B_T):")
+    for row in Y_AB_T:
+        print(row)
+
+    print("\nИтоговая матрица K (Y_AB + Y_AB_T):")
+    for row in K:
+        print(row)
+
+
+    def find_ordering(pairs, n):
+        graph = {i: [] for i in range(1, n + 1)}
+        in_degree = {i: 0 for i in range(1, n + 1)}
+
+        for i, j in pairs:
+            graph[i].append(j)
+            in_degree[j] += 1
+
+        queue = deque([node for node in in_degree if in_degree[node] == 0])
+        result = []
+        visited = 0
+
+        while queue:
+            node = queue.popleft()
+            result.append(node)
+            visited += 1
+
+            for neighbor in graph[node]:
+                in_degree[neighbor] -= 1
+                if in_degree[neighbor] == 0:
+                    queue.append(neighbor)
+
+        if visited != n:
+            print("Граф имеет цикл, невозможно построить правильную аранжировку")
+            return None
+
+        return result
+
+    zero_pairs = []
+    for i in range(len(K)):
+        for j in range(i, len(K[0])):
+            if K[i][j] == 0:
+                zero_pairs.append((i + 1, j + 1))
+
+    print("Список пар (i, j), где K[i][j] = 0:", zero_pairs)
+
+    n = len(K)
+    ordering = find_ordering(zero_pairs, n)
+
+    print("Упорядоченная последовательность:", ordering)
+
+main()

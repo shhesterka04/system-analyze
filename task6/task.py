@@ -36,8 +36,6 @@ def fuzzy_control(temp_json, heat_json, rules_json, current_temp):
 
     return numerator / denominator if denominator != 0 else 0
 
-base_path = os.path.dirname(__file__)
-
 def read_json_file(file_path):
     with open(file_path, "r") as file:
         content = file.read()
@@ -45,10 +43,17 @@ def read_json_file(file_path):
             raise ValueError(f"File {file_path} is empty")
         return content
 
-temp_json = read_json_file(os.path.join(base_path, "temp.json"))
-heat_json = read_json_file(os.path.join(base_path, "heat.json"))
-rules_json = read_json_file(os.path.join(base_path, "rules.json"))
 
-current_temp = 20.0
-optimal_control = fuzzy_control(temp_json, heat_json, rules_json, current_temp)
-print(f'Optimal control value: {optimal_control}')
+def main():
+    current_temp = 20.0
+    optimal_control = fuzzy_control(temp_json, heat_json, rules_json, current_temp)
+    print(f'Optimal control value: {optimal_control}')
+
+
+if __name__ == "__main__":
+    base_path = os.path.dirname(__file__)
+
+    temp_json = read_json_file(os.path.join(base_path, "temp.json"))
+    heat_json = read_json_file(os.path.join(base_path, "heat.json"))
+    rules_json = read_json_file(os.path.join(base_path, "rules.json"))
+    main()
